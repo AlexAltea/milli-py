@@ -1,0 +1,13 @@
+[package]
+name = "milli_py"
+version = "1.0.0"
+authors = ["alexandro@phi.nz"]
+
+[lib]
+name = "milli"
+
+# Needed to produce a shared library for Python.
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.18.1", features = ["extension-module"] }
