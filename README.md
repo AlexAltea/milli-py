@@ -1,8 +1,8 @@
 # milli-py
 
-Python bindings for Milli, the embeddable Rust-based search engine powering Meilisearch.
+Python bindings for [Milli](https://github.com/meilisearch/meilisearch/tree/main/milli), the embeddable Rust-based search engine powering [Meilisearch](https://www.meilisearch.com/).
 
-Due to limitations around Rust lifecycles, all functionality available in `IndexDocuments` and `Search` has been integrated as methods of the `Index` class. This ~~sacrifices~~ simplifies functionality available in the origianl *milli* package.
+Due to limitations around Rust lifecycles, methods available via `IndexDocuments` and `Search` have been integrated directly into the `Index` class. This ~~sacrifices~~ simplifies functionality in the original *milli* package.
 
 Install the package via:
 
@@ -12,7 +12,7 @@ pip install milli
 
 ## Usage
 
-Basic usage of the package:
+Basic usage of the *milli-py*:
 
 ```py
 import milli
@@ -24,6 +24,6 @@ index.add_documents([
     { "title": "Hello sun", "content": "This is yet another sample" },
 ])
 results = index.search("wrold")
-result = index.get_document(results[0])
-assert(result['title'] == "Hello world")
+document = index.get_document(results[0])
+assert(document['title'] == "Hello world")
 ```
