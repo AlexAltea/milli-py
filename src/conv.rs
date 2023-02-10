@@ -3,10 +3,7 @@
 use pyo3::exceptions::PyTypeError;
 
 use pyo3::prelude::*;
-use pyo3::{
-    types::{PyAny, PyDict, PyFloat, PyList, PyTuple},
-    wrap_pyfunction,
-};
+use pyo3::types::{PyDict, PyFloat, PyList, PyTuple};
 
 #[derive(Debug)]
 pub enum PyCanonicalJSONError {

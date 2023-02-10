@@ -28,19 +28,6 @@ impl<'de, 'a> DeserializeSeed<'de> for ObkvValue<'a> {
     }
 }
 
-impl<'a> ObkvValue<'a> {
-    fn parse_primitive<E, T>(self, value: T, parser: &PyObject) -> Result<PyObject, E>
-    where
-        E: serde::de::Error,
-        T: ToString,
-    {
-        match parser.call1(self.py, (value.to_string(),)) {
-            Ok(primitive) => Ok(primitive),
-            Err(err) => Err(serde::de::Error::custom(PyErr::from(err))),
-        }
-    }
-}
-
 impl<'de, 'a> Visitor<'de> for ObkvValue<'a> {
     type Value = PyObject;
 

@@ -1,12 +1,24 @@
-[build-system]
-requires = ["maturin>=0.14,<0.15"]
-build-backend = "maturin"
-
 [project]
 name = "milli"
 requires-python = ">=3.7"
+repository = "https://github.com/AlexAltea/milli-py"
 classifiers = [
-    "Programming Language :: Rust",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
+    "Programming Language :: Rust",
+    "Typing :: Typed",
 ]
+
+[build-system]
+requires = ["maturin>=0.14,<0.15"]
+build-backend = "maturin"
