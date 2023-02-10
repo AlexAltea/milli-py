@@ -1,3 +1,4 @@
+// From https://github.com/mre/hyperjson/blob/87335d442869832b46e7e9f10800a27360dd8169/src/lib.rs#L397
 use std::collections::BTreeMap;
 use std::fmt;
 use std::marker::PhantomData;

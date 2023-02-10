@@ -19,9 +19,9 @@ import milli
 
 index = milli.Index("path/to/index")
 index.add_documents([
-    { "title": "Hello world", "content": "This is a sample" },
-    { "title": "Hello moon", "content": "This is another sample" },
-    { "title": "Hello sun", "content": "This is yet another sample" },
+    { "id": 0, "title": "Hello world", "content": "This is a sample" },
+    { "id": 1, "title": "Hello moon", "content": "This is another sample" },
+    { "id": 2, "title": "Hello sun", "content": "This is yet another sample" },
 ])
 results = index.search("wrold")
 document = index.get_document(results[0])
