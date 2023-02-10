@@ -1,0 +1,3 @@
+[submodule "meilisearch"]
+	path = meilisearch
+	url = https://github.com/meilisearch/meilisearch
