@@ -1,7 +1,8 @@
 [package]
 name = "milli_py"
 version = "1.0.0"
-authors = ["alexandro@phi.nz"]
+edition = "2021"
+authors = ["Alexandro Sanchez Bach <alexandro@phi.nz>"]
 
 [lib]
 name = "milli"
@@ -10,4 +11,7 @@ name = "milli"
 crate-type = ["cdylib"]
 
 [dependencies]
+milli = { path = "meilisearch/milli" }
 pyo3 = { version = "0.18.1", features = ["extension-module"] }
+serde_json = { version = "1.0.93" }
+serde = { version = "1.0.152" }
