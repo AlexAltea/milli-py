@@ -45,7 +45,8 @@ impl PyIndex {
         }
         let vector = docbuilder.into_inner().unwrap();
         let reader = DocumentsBatchReader::from_reader(std::io::Cursor::new(vector)).unwrap();
-        let (builder, user_error) = builder.add_documents(reader).unwrap();
+
+        let (builder, _user_error) = builder.add_documents(reader).unwrap();
         builder.execute().unwrap();
         wtxn.commit().unwrap();
         Ok(DocumentAdditionResult{})
