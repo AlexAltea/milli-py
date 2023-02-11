@@ -1,5 +1,7 @@
 # milli-py
 
+[![](https://img.shields.io/pypi/v/milli.svg)](https://pypi.python.org/pypi/milli)
+
 Python bindings for [Milli](https://github.com/meilisearch/meilisearch/tree/main/milli), the embeddable Rust-based search engine powering [Meilisearch](https://www.meilisearch.com/).
 
 Due to limitations around Rust lifecycles, methods available via `IndexDocuments` and `Search` have been integrated directly into the `Index` class. This ~~sacrifices~~ simplifies functionality in the original *milli* package.
