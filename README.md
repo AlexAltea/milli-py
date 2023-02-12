@@ -13,8 +13,6 @@ Install the package via:
 pip install milli
 ```
 
-[Check out the documentation at `docs/index.md`](https://github.com/AlexAltea/milli-py/blob/master/docs/index.md).
-
 ## Usage
 
 Basic usage of the *milli-py*:
@@ -32,6 +30,12 @@ results = index.search("wrold")
 document = index.get_document(results[0])
 assert(document['title'] == "Hello world")
 ```
+
+## Documentation
+
+Full documentation for *milli-py* is available at [`docs/index.md`](./docs/index.md).
+
+View it online at https://github.com/AlexAltea/milli-py/blob/master/docs/index.md.
 
 ## Examples
 
