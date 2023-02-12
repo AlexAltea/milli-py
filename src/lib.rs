@@ -72,11 +72,14 @@ impl PyIndex {
         Ok(dict.into())
     }
 
-    fn get_documents(&self, py: Python<'_>, ids: Vec<DocumentId>) -> PyResult<Py<PyDict>> {
+    fn get_documents(&self, py: Python<'_>, ids: Vec<DocumentId>) -> PyResult<Py<PyList>> {
         let rtxn = self.index.read_txn().unwrap();
-        let (_docid, obkv) = self.index.documents(&rtxn, ids).unwrap()[0];
-        let dict = obkv_to_pydict!(self, py, rtxn, obkv);
-        Ok(dict.into())
+        let docs = self.index.documents(&rtxn, ids).unwrap();
+        let list = PyList::empty(py);
+        for (_docid, obkv) in docs {
+            list.append(obkv_to_pydict!(self, py, rtxn, obkv)).unwrap();
+        }
+        Ok(list.into())
     }
 
     fn search(&self, query: String) -> Vec<DocumentId> {
