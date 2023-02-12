@@ -29,3 +29,11 @@ results = index.search("wrold")
 document = index.get_document(results[0])
 assert(document['title'] == "Hello world")
 ```
+
+## Examples
+
+Real-world examples of *milli-py* in action:
+
+- [Curator](https://github.com/AlexAltea/curator/blob/master/curator/databases/omdb.py#L9): Searching 140k movies (~10 MB csv, ~140 MB index) in 36ms to obtain metadata and auto-rename/tag movie collections.
+
+Do you have other interesting examples? Let me know!
