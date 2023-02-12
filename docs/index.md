@@ -1,7 +1,5 @@
 # Documentation
 
-TODO.
-
 ## `Index`
 
 Main class used to interface with an index/database in the local filesystem. An *index* is a directory containing a pair of `data.mdb` and `lock.mdb` files.
@@ -12,10 +10,10 @@ Main class used to interface with an index/database in the local filesystem. An 
 
 Opens or creates an index at the specified directory, limiting the maximum size of the underlying databse.
 
-Arguments:
-
-- `path`: Path to the index directory provided as a string. Directory must exists.
-- `max_size`: Maximum size in bytes of `data.mdb`.
+| Parameter | Required | Type | Description |
+|-----------|----------|------|-------------|
+| `path` | Yes | [Path-like object](https://docs.python.org/3/glossary.html#term-path-like-object) | Index directory. Directory must exist. |
+| `max_size` | Yes | [`int`](https://docs.python.org/3/library/functions.html#int) | Maximum size in bytes of `data.mdb`. |
 
 Example:
 
@@ -33,7 +31,10 @@ Adds documents to the index.
 
 Arguments:
 
-- `documents`: List of JSON-convertible dictionaries, i.e. dictionaries with string keys mapping to integers, floats, booleans, strings, arrays, and other dictionaries with string keys (potentially nested).
+
+| Parameter | Required | Type | Description |
+|-----------|----------|------|-------------|
+| `documents` | Yes | [`Dict[str,Any]`](https://docs.python.org/3/library/typing.html#typing.Dict) | List of JSON-convertible dictionaries, i.e. dictionaries with string keys mapping to integers, floats, booleans, strings, arrays, and other dictionaries with string keys (potentially nested). |
 
 Returns: TODO.
 
@@ -51,11 +52,11 @@ Example:
 
 > *Index.get_document(id)*
 
-Obtain the entire document from the index given its internal ID.
+Obtain a document from the index given its internal ID.
 
-Arguments:
-
-- `id`: Integer representing the document internal ID. 
+| Parameter | Required | Type | Description |
+|-----------|----------|------|-------------|
+| `id` | Yes | [`int`](https://docs.python.org/3/library/functions.html#int) | Internal document ID. |
 
 Returns: Document contents
 
@@ -68,9 +69,13 @@ Example:
 
 #### `Index.get_documents`
 
-> *Index.get_documents(id)*
+> *Index.get_documents(ids)*
 
-**Not yet implemented.**
+Obtain a list of document from the index given their internal IDs.
+
+| Parameter | Required | Type | Description |
+|-----------|----------|------|-------------|
+| `ids` | Yes | [`List[int]`](https://docs.python.org/3/library/typing.html#typing.List) | List of internal document IDs. |
 
 Example (formatted):
 ```py
@@ -87,11 +92,11 @@ Example (formatted):
 
 Searches the index for the given input string.
 
-Arguments:
+| Parameter | Required | Type | Description |
+|-----------|----------|------|-------------|
+| `query` | Yes | [`str`](https://docs.python.org/3/library/stdtypes.html#str) | Text to query the index with. |
 
-- `query`: String to query the index with.
-
-Returns: List of internal IDs of matching documents, sorted by decreasing match score. You can retrieve the full documents by applying [`Index.get_documents`](#indexget_document) on this list.
+Returns: List of internal IDs of matching documents, sorted by decreasing match score. You can retrieve the full documents by applying [`Index.get_documents`](#indexget_documents) on this list.
 
 Example:
 
