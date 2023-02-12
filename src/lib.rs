@@ -4,12 +4,27 @@ use pyo3::prelude::*;
 use pyo3::types::*;
 
 use mi::{DocumentId, Index, Search};
-use mi::update::{IndexerConfig, IndexDocumentsConfig, IndexDocuments};
 use mi::documents::{DocumentsBatchBuilder, DocumentsBatchReader};
+use mi::update::{IndexerConfig, IndexDocumentsConfig, IndexDocuments};
 use serde::Deserializer;
 
 mod conv;
-mod obkv;
+
+// Helpers
+macro_rules! obkv_to_pydict {
+    ($self:ident, $py:ident, $rtxn:ident, $obkv:ident) => {{
+        let fields = $self.index.fields_ids_map(&$rtxn).unwrap();
+        let dict = PyDict::new($py);
+        for (id, bytes) in $obkv.iter() {
+            let key = fields.name(id);
+            let mut deserializer = serde_json::Deserializer::from_slice(&bytes);
+            let value = conv::ObkvValue::new($py);
+            let value = deserializer.deserialize_any(value).unwrap();
+            dict.set_item(key, value).unwrap();
+        }
+        dict
+    }};
+}
 
 #[pyclass(name="Index")]
 struct PyIndex {
@@ -53,34 +68,14 @@ impl PyIndex {
     fn get_document(&self, py: Python<'_>, id: DocumentId) -> PyResult<Py<PyDict>> {
         let rtxn = self.index.read_txn().unwrap();
         let (_docid, obkv) = self.index.documents(&rtxn, [id]).unwrap()[0];
-        let fields = self.index.fields_ids_map(&rtxn).unwrap();
-
-        // Deserialize JSON into Python objects
-        let dict = PyDict::new(py);
-        for (id, bytes) in obkv.iter() {
-            let key = fields.name(id);
-            let mut deserializer = serde_json::Deserializer::from_slice(&bytes);
-            let value = obkv::ObkvValue::new(py);
-            let value = deserializer.deserialize_any(value).unwrap();
-            dict.set_item(key, value).unwrap();
-        }
+        let dict = obkv_to_pydict!(self, py, rtxn, obkv);
         Ok(dict.into())
     }
 
     fn get_documents(&self, py: Python<'_>, ids: Vec<DocumentId>) -> PyResult<Py<PyDict>> {
         let rtxn = self.index.read_txn().unwrap();
         let (_docid, obkv) = self.index.documents(&rtxn, ids).unwrap()[0];
-        let fields = self.index.fields_ids_map(&rtxn).unwrap();
-
-        // Deserialize JSON into Python objects
-        let dict = PyDict::new(py);
-        for (id, bytes) in obkv.iter() {
-            let key = fields.name(id);
-            let mut deserializer = serde_json::Deserializer::from_slice(&bytes);
-            let value = obkv::ObkvValue::new(py);
-            let value = deserializer.deserialize_any(value).unwrap();
-            dict.set_item(key, value).unwrap();
-        }
+        let dict = obkv_to_pydict!(self, py, rtxn, obkv);
         Ok(dict.into())
     }
 
