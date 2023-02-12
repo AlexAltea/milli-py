@@ -2,11 +2,11 @@ name: ci
 on: [push]
 jobs:
   build:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9"]
-
+        python-version: ["3.9", "3.10"]
+        os: ["ubuntu-latest"]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
         with: 
@@ -31,8 +31,33 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
 
-      # Build and test package
+      # Build package
       - name: Build package
         run: |
           pip3 install maturin
           python3 -m maturin build -i ${{ matrix.python-version }}
+
+  test:
+    needs: build
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10"]
+        os: ["ubuntu-latest"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Test package
+        run: |
+          echo "TODO: Testing..."
+
+  publish:
+    needs: test
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10"]
+        os: ["ubuntu-latest"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Publish package
+        run: |
+          echo "TODO: Publishing..."
+          ls target/wheels
