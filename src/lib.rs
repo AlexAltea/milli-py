@@ -1,5 +1,8 @@
 extern crate milli as mi;
 
+use std::ops::Deref;
+use std::sync::Arc;
+
 use pyo3::prelude::*;
 use pyo3::types::*;
 
@@ -28,7 +31,7 @@ macro_rules! obkv_to_pydict {
 
 #[pyclass(name="Index")]
 struct PyIndex {
-    index: Index,
+    index: Arc<Index>,
 }
 
 #[pymethods]
@@ -40,15 +43,16 @@ impl PyIndex {
             options.map_size(map_size.unwrap());
         }
         let index = Index::new(options, &path).unwrap();
+        let index = Arc::new(index);
         return PyIndex{ index };
     }
 
     fn add_documents(&self, py: Python<'_>, list: &PyList) -> PyResult<DocumentAdditionResult> {
-        let mut wtxn = self.index.write_txn().unwrap();
+        let mut wtxn = self.write_txn().unwrap();
         let config = IndexerConfig::default();
         let indexing_config = IndexDocumentsConfig::default();
         let builder = IndexDocuments::new(
-            &mut wtxn, &self.index, &config, indexing_config.clone(), |_| (), || false).unwrap();
+            &mut wtxn, &self, &config, indexing_config.clone(), |_| (), || false).unwrap();
 
         // Convert Python array into Vec<milli::Object>
         let list = list.to_object(py);
@@ -68,15 +72,15 @@ impl PyIndex {
     }
 
     fn get_document(&self, py: Python<'_>, id: DocumentId) -> PyResult<Py<PyDict>> {
-        let rtxn = self.index.read_txn().unwrap();
+        let rtxn = self.read_txn().unwrap();
         let (_docid, obkv) = self.index.documents(&rtxn, [id]).unwrap()[0];
         let dict = obkv_to_pydict!(self, py, rtxn, obkv);
         Ok(dict.into())
     }
 
     fn get_documents(&self, py: Python<'_>, ids: Vec<DocumentId>) -> PyResult<Py<PyList>> {
-        let rtxn = self.index.read_txn().unwrap();
-        let docs = self.index.documents(&rtxn, ids).unwrap();
+        let rtxn = self.read_txn().unwrap();
+        let docs = self.documents(&rtxn, ids).unwrap();
         let list = PyList::empty(py);
         for (_docid, obkv) in docs {
             list.append(obkv_to_pydict!(self, py, rtxn, obkv)).unwrap();
@@ -85,11 +89,24 @@ impl PyIndex {
     }
 
     fn search(&self, query: String) -> Vec<DocumentId> {
-        let rtxn = self.index.read_txn().unwrap();
-        let mut search = Search::new(&rtxn, &self.index);
+        let rtxn = self.read_txn().unwrap();
+        let mut search = Search::new(&rtxn, &self);
         search.query(query);
         let results = search.execute().unwrap();
         return results.documents_ids;
+    }
+}
+
+impl Deref for PyIndex {
+    type Target = Index;
+    fn deref(&self) -> &Self::Target {
+        self.index.as_ref()
+    }
+}
+
+impl Drop for PyIndex {
+    fn drop(&mut self) {
+        self.index.as_ref().clone().prepare_for_closing();
     }
 }
 

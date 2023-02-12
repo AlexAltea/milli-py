@@ -37,27 +37,12 @@ jobs:
           pip3 install maturin
           python3 -m maturin build -i ${{ matrix.python-version }}
 
-  test:
-    needs: build
-    strategy:
-      matrix:
-        python-version: ["3.9", "3.10"]
-        os: ["ubuntu-latest"]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Test package
+      # Install package
+      - name: Install package
         run: |
-          echo "TODO: Testing..."
+          pip3 install target/wheels/milli*.whl
 
-  publish:
-    needs: test
-    strategy:
-      matrix:
-        python-version: ["3.9", "3.10"]
-        os: ["ubuntu-latest"]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Publish package
+      # Test package
+      - name: Install package
         run: |
-          echo "TODO: Publishing..."
-          ls target/wheels
+          python3 test.py
