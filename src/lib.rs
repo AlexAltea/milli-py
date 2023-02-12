@@ -34,9 +34,11 @@ struct PyIndex {
 #[pymethods]
 impl PyIndex {
     #[new]
-    fn new(path: String, map_size: usize) -> Self {
+    fn new(path: String, map_size: Option<usize>) -> Self {
         let mut options = mi::heed::EnvOpenOptions::new();
-        options.map_size(map_size);
+        if map_size.is_some() {
+            options.map_size(map_size.unwrap());
+        }
         let index = Index::new(options, &path).unwrap();
         return PyIndex{ index };
     }

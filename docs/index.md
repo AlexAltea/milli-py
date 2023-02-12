@@ -6,19 +6,19 @@ Main class used to interface with an index/database in the local filesystem. An 
 
 ### Constructor
 
-> *Index(path, max_size)*
+> *Index(path, map_size=...)*
 
 Opens or creates an index at the specified directory, limiting the maximum size of the underlying databse.
 
 | Parameter | Required | Type | Description |
 |-----------|----------|------|-------------|
 | `path` | Yes | [Path-like object](https://docs.python.org/3/glossary.html#term-path-like-object) | Index directory. Directory must exist. |
-| `max_size` | Yes | [`int`](https://docs.python.org/3/library/functions.html#int) | Maximum size in bytes of `data.mdb`. |
+| `map_size` | No | [`int`](https://docs.python.org/3/library/functions.html#int) | Maximum size in bytes of `data.mdb`. Defaults set by Milli. |
 
 Example:
 
 ```py
->>> index = Index('path/to/index', 2**30)  # Open/create index of up-to 1 GiB in size
+>>> index = Index('path/to/index', map_size=2**30) # Open/create index of up-to 1 GiB
 ```
 
 ### Methods
