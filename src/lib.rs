@@ -1,7 +1,6 @@
 extern crate milli as mi;
 
 use std::ops::Deref;
-use std::sync::Arc;
 
 use pyo3::prelude::*;
 use pyo3::types::*;
@@ -31,7 +30,7 @@ macro_rules! obkv_to_pydict {
 
 #[pyclass(name="Index")]
 struct PyIndex {
-    index: Arc<Index>,
+    index: Index,
 }
 
 #[pymethods]
@@ -43,7 +42,6 @@ impl PyIndex {
             options.map_size(map_size.unwrap());
         }
         let index = Index::new(options, &path).unwrap();
-        let index = Arc::new(index);
         return PyIndex{ index };
     }
 
@@ -100,13 +98,13 @@ impl PyIndex {
 impl Deref for PyIndex {
     type Target = Index;
     fn deref(&self) -> &Self::Target {
-        self.index.as_ref()
+        &self.index
     }
 }
 
 impl Drop for PyIndex {
     fn drop(&mut self) {
-        self.index.as_ref().clone().prepare_for_closing();
+        self.index.clone().prepare_for_closing();
     }
 }
 
