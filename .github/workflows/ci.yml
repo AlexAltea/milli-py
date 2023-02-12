@@ -24,7 +24,15 @@ jobs:
         run: |
           cargo check
 
+      # Install and cache Python dependencies
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
       # Build and test package
-      - run: |
+      - name: Build package
+        run: |
           pip3 install maturin
-          python3 -m maturin build -i 3.9
+          python3 -m maturin build -i ${{ matrix.python-version }}
