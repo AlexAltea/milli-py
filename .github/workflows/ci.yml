@@ -23,3 +23,8 @@ jobs:
       - name: Check package
         run: |
           cargo check
+
+      # Build and test package
+      - run: |
+          pip3 install maturin
+          python3 -m maturin build -i 3.9

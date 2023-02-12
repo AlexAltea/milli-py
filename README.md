@@ -1,5 +1,6 @@
 # milli-py
 
+[![ci-badge](https://github.com/AlexAltea/milli-py/actions/workflows/ci.yml/badge.svg)](https://github.com/AlexAltea/milli-py/actions/workflows/ci.yml)
 [![](https://img.shields.io/pypi/v/milli.svg)](https://pypi.python.org/pypi/milli)
 
 Python bindings for [Milli](https://github.com/meilisearch/meilisearch/tree/main/milli), the embeddable Rust-based search engine powering [Meilisearch](https://www.meilisearch.com/).
