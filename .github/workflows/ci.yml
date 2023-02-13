@@ -3,9 +3,10 @@ on: [push]
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10"]
-        os: ["ubuntu-latest"]
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+        os: ["ubuntu-latest", "windows-latest", "macos-latest"]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
@@ -30,17 +31,22 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
+      - name: Add Python user scripts to PATH
+        if: matrix.os == 'windows-latest'
+        run: |
+          $PYTHON_USER_SCRIPTS = (python -c "import os,sysconfig;print(sysconfig.get_path('scripts',f'{os.name}_user'))")
+          $env:PATH = "$PYTHON_USER_SCRIPTS;$env:PATH"
 
       # Build package
       - name: Build package
         run: |
           pip3 install maturin
-          python3 -m maturin build -i ${{ matrix.python-version }}
+          maturin build -i ${{ matrix.python-version }}
 
       # Install package
       - name: Install package
         run: |
-          pip3 install target/wheels/milli*.whl
+          pip3 install --no-index --find-links=target/wheels milli
 
       # Test package
       - name: Test package
@@ -52,4 +58,4 @@ jobs:
         env:
           MATURIN_PASSWORD: ${{ secrets.PYPI_TOKEN }}
         run: |
-          python3 -m maturin publish --skip-existing --username __token__
+          maturin publish --skip-existing --username __token__
