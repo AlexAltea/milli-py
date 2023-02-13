@@ -43,6 +43,13 @@ jobs:
           pip3 install target/wheels/milli*.whl
 
       # Test package
-      - name: Install package
+      - name: Test package
         run: |
           python3 test.py
+
+      # Publish package
+      - name: Publish package
+        env:
+          MATURIN_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        run: |
+          python3 -m maturin publish --skip-existing --username __token__
