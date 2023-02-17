@@ -7,7 +7,7 @@ use pyo3::types::*;
 
 use mi::{DocumentId, Index, Search};
 use mi::documents::{DocumentsBatchBuilder, DocumentsBatchReader};
-use mi::update::{IndexerConfig, IndexDocumentsConfig, IndexDocuments};
+use mi::update::{IndexerConfig, IndexDocumentsConfig, IndexDocumentsMethod, IndexDocuments};
 use serde::Deserializer;
 
 mod conv;
@@ -45,12 +45,16 @@ impl PyIndex {
         return PyIndex{ index };
     }
 
-    fn add_documents(&self, py: Python<'_>, list: &PyList) -> PyResult<DocumentAdditionResult> {
+    fn add_documents(&self, py: Python<'_>, list: &PyList, update_method: Option<PyIndexDocumentsMethod>) -> PyResult<DocumentAdditionResult> {
+        let mut config = IndexDocumentsConfig::default();
+        if update_method.is_some() {
+            config.update_method = update_method.unwrap().into();
+        }
+
         let mut wtxn = self.write_txn().unwrap();
-        let config = IndexerConfig::default();
-        let indexing_config = IndexDocumentsConfig::default();
+        let indexer_config = IndexerConfig::default();
         let builder = IndexDocuments::new(
-            &mut wtxn, &self, &config, indexing_config.clone(), |_| (), || false).unwrap();
+            &mut wtxn, &self, &indexer_config, config.clone(), |_| (), || false).unwrap();
 
         // Convert Python array into Vec<milli::Object>
         let list = list.to_object(py);
@@ -108,6 +112,21 @@ impl Drop for PyIndex {
     }
 }
 
+#[derive(Clone)]
+#[pyclass(name="IndexDocumentsMethod")]
+enum PyIndexDocumentsMethod {
+    ReplaceDocuments,
+    UpdateDocuments,
+}
+impl From<PyIndexDocumentsMethod> for IndexDocumentsMethod {
+    fn from(value: PyIndexDocumentsMethod) -> Self {
+        match value {
+            PyIndexDocumentsMethod::ReplaceDocuments => Self::ReplaceDocuments,
+            PyIndexDocumentsMethod::UpdateDocuments => Self::UpdateDocuments,
+        }
+    }
+}
+
 #[pyclass]
 pub struct DocumentAdditionResult {
 }
@@ -115,5 +134,6 @@ pub struct DocumentAdditionResult {
 #[pymodule]
 fn milli(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyIndex>()?;
+    m.add_class::<PyIndexDocumentsMethod>()?;
     Ok(())
 }
