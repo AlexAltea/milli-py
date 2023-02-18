@@ -7,7 +7,8 @@ use pyo3::types::*;
 
 use mi::{DocumentId, Index, Search};
 use mi::documents::{DocumentsBatchBuilder, DocumentsBatchReader};
-use mi::update::{IndexerConfig, IndexDocumentsConfig, IndexDocumentsMethod, IndexDocuments};
+use mi::update::{DeleteDocuments, DocumentAdditionResult, DocumentDeletionResult,
+    IndexerConfig, IndexDocumentsConfig, IndexDocumentsMethod, IndexDocuments};
 use serde::Deserializer;
 
 mod conv;
@@ -45,7 +46,7 @@ impl PyIndex {
         return PyIndex{ index };
     }
 
-    fn add_documents(&self, py: Python<'_>, list: &PyList, update_method: Option<PyIndexDocumentsMethod>) -> PyResult<DocumentAdditionResult> {
+    fn add_documents(&self, py: Python<'_>, list: &PyList, update_method: Option<PyIndexDocumentsMethod>) -> PyResult<PyDocumentAdditionResult> {
         let mut config = IndexDocumentsConfig::default();
         if update_method.is_some() {
             config.update_method = update_method.unwrap().into();
@@ -68,9 +69,20 @@ impl PyIndex {
         let reader = DocumentsBatchReader::from_reader(std::io::Cursor::new(vector)).unwrap();
 
         let (builder, _user_error) = builder.add_documents(reader).unwrap();
-        builder.execute().unwrap();
+        let result = builder.execute().unwrap();
         wtxn.commit().unwrap();
-        Ok(DocumentAdditionResult{})
+        Ok(result.into())
+    }
+
+    fn delete_documents(&self, ids: Vec<DocumentId>) -> PyResult<PyDocumentDeletionResult> {
+        let mut wtxn = self.write_txn().unwrap();
+        let mut builder = DeleteDocuments::new(&mut wtxn, self).unwrap();
+        for docid in ids {
+            builder.delete_document(docid);
+        }
+        let result = builder.execute().unwrap();
+        wtxn.commit().unwrap();
+        Ok(result.into())
     }
 
     fn get_document(&self, py: Python<'_>, id: DocumentId) -> PyResult<Py<PyDict>> {
@@ -127,13 +139,43 @@ impl From<PyIndexDocumentsMethod> for IndexDocumentsMethod {
     }
 }
 
-#[pyclass]
-pub struct DocumentAdditionResult {
+#[pyclass(name="DocumentAdditionResult")]
+struct PyDocumentAdditionResult {
+    #[pyo3(get, set)]
+    indexed_documents: u64,
+    #[pyo3(get, set)]
+    number_of_documents: u64,
+}
+impl From<DocumentAdditionResult> for PyDocumentAdditionResult {
+    fn from(value: DocumentAdditionResult) -> Self {
+        PyDocumentAdditionResult{
+            indexed_documents: value.indexed_documents,
+            number_of_documents: value.number_of_documents,
+        }
+    }
+}
+
+#[pyclass(name="DocumentDeletionResult")]
+struct PyDocumentDeletionResult {
+    #[pyo3(get, set)]
+    deleted_documents: u64,
+    #[pyo3(get, set)]
+    remaining_documents: u64,
+}
+impl From<DocumentDeletionResult> for PyDocumentDeletionResult {
+    fn from(value: DocumentDeletionResult) -> Self {
+        PyDocumentDeletionResult{
+            deleted_documents: value.deleted_documents,
+            remaining_documents: value.remaining_documents,
+        }
+    }
 }
 
 #[pymodule]
 fn milli(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyIndex>()?;
     m.add_class::<PyIndexDocumentsMethod>()?;
+    m.add_class::<PyDocumentAdditionResult>()?;
+    m.add_class::<PyDocumentDeletionResult>()?;
     Ok(())
 }

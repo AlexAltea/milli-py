@@ -2,7 +2,7 @@ import milli
 import tempfile
 
 def test_milli_index():
-    # Index search
+    # Document search
     with tempfile.TemporaryDirectory() as tmp:
         index = milli.Index(tmp)
         index.add_documents([   
@@ -15,7 +15,7 @@ def test_milli_index():
         assert(document['title'] == "Hello world")
         del(index)
 
-    # Index update
+    # Document update
     with tempfile.TemporaryDirectory() as tmp:
         index = milli.Index(tmp)
         index.add_documents([
@@ -35,4 +35,18 @@ def test_milli_index():
             {'id': 2, 'title': 'Hello helios', 'content': 'This is yet another sample'},
             {'id': 0, 'title': 'Hello world', 'content': 'This is a sample', 'people': True},
         ])
+        del(index)
+
+    # Document removal
+    with tempfile.TemporaryDirectory() as tmp:
+        index = milli.Index(tmp)
+        index.add_documents([
+            { "id": 0, "title": "Hello world", "content": "This is a sample" },
+            { "id": 1, "title": "Hello moon", "content": "This is another sample" },
+            { "id": 2, "title": "Hello sun", "content": "This is yet another sample" },
+        ])
+        result = index.delete_documents([2, 0])
+        assert(result.deleted_documents == 2)
+        assert(result.remaining_documents == 1)
+        assert(index.get_document(1)['id'] == 1)
         del(index)
