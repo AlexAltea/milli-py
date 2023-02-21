@@ -45,6 +45,12 @@ Example:
 ])
 ```
 
+#### `Index.delete_documents`
+
+> *Index.delete_documents(ids)*
+
+TODO.
+
 #### `Index.get_document`
 
 > *Index.get_document(id)*
