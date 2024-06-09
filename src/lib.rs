@@ -7,7 +7,7 @@ use pyo3::types::*;
 
 use mi::{DocumentId, Index, Search};
 use mi::documents::{DocumentsBatchBuilder, DocumentsBatchReader};
-use mi::update::{DeleteDocuments, DocumentAdditionResult, DocumentDeletionResult,
+use mi::update::{ClearDocuments, DocumentAdditionResult,
     IndexerConfig, IndexDocumentsConfig, IndexDocumentsMethod, IndexDocuments};
 use serde::Deserializer;
 
@@ -74,15 +74,44 @@ impl PyIndex {
         Ok(result.into())
     }
 
-    fn delete_documents(&self, ids: Vec<DocumentId>) -> PyResult<PyDocumentDeletionResult> {
-        let mut wtxn = self.write_txn().unwrap();
-        let mut builder = DeleteDocuments::new(&mut wtxn, self).unwrap();
-        for docid in ids {
-            builder.delete_document(docid);
+    fn all_documents(&self, py: Python<'_>) -> PyResult<Py<PyIterator>> {
+        let rtxn = self.read_txn().unwrap();
+        let docs = self.index.all_documents(&rtxn).unwrap();
+
+        // TODO: Wrap as a Python iterator without converting to list
+        let list = PyList::empty(py);
+        for document in docs {
+            let (docid, obkv) = document.unwrap();
+            let doc = obkv_to_pydict!(self, py, rtxn, obkv);
+            let tuple = PyTuple::new(py, &[docid.into_py(py), doc.into()]);
+            list.append(tuple).unwrap();
         }
+        let iter = PyIterator::from_object(py, list).unwrap();
+        Ok(iter.into())
+    }
+
+    fn clear_documents(&self) -> PyResult<u64> {
+        let mut wtxn = self.write_txn().unwrap();
+        let builder = ClearDocuments::new(&mut wtxn, self);
         let result = builder.execute().unwrap();
         wtxn.commit().unwrap();
         Ok(result.into())
+    }
+
+    fn delete_documents(&self, ids: Vec<String>) -> PyResult<u64> {
+        let config = IndexDocumentsConfig::default();
+        let indexer_config = IndexerConfig::default();
+        let mut wtxn = self.write_txn().unwrap();
+        let builder = IndexDocuments::new(
+            &mut wtxn,
+            &self,
+            &indexer_config,
+            config.clone(), |_| (), || false).unwrap();
+
+        let (builder, removed) = builder.remove_documents(ids).unwrap();
+        let _result = builder.execute().unwrap();
+        wtxn.commit().unwrap();
+        Ok(removed.unwrap().into())
     }
 
     fn get_document(&self, py: Python<'_>, id: DocumentId) -> PyResult<Py<PyDict>> {
@@ -100,6 +129,13 @@ impl PyIndex {
             list.append(obkv_to_pydict!(self, py, rtxn, obkv)).unwrap();
         }
         Ok(list.into())
+    }
+
+    fn primary_key(&self) -> PyResult<Option<String>> {
+        let rtxn = self.read_txn().unwrap();
+        let result = self.index.primary_key(&rtxn).unwrap();
+        let converted_result = result.map(|s| s.to_string());
+        Ok(converted_result)
     }
 
     fn search(&self, query: String) -> Vec<DocumentId> {
@@ -155,27 +191,10 @@ impl From<DocumentAdditionResult> for PyDocumentAdditionResult {
     }
 }
 
-#[pyclass(name="DocumentDeletionResult")]
-struct PyDocumentDeletionResult {
-    #[pyo3(get, set)]
-    deleted_documents: u64,
-    #[pyo3(get, set)]
-    remaining_documents: u64,
-}
-impl From<DocumentDeletionResult> for PyDocumentDeletionResult {
-    fn from(value: DocumentDeletionResult) -> Self {
-        PyDocumentDeletionResult{
-            deleted_documents: value.deleted_documents,
-            remaining_documents: value.remaining_documents,
-        }
-    }
-}
-
 #[pymodule]
 fn milli(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyIndex>()?;
     m.add_class::<PyIndexDocumentsMethod>()?;
     m.add_class::<PyDocumentAdditionResult>()?;
-    m.add_class::<PyDocumentDeletionResult>()?;
     Ok(())
 }

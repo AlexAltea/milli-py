@@ -45,11 +45,33 @@ Example:
 ])
 ```
 
+#### `Index.all_documents`
+
+> *Index.all_documents()*
+
+Iterator of all documents in the index alongside their internal IDs.
+
+Returns: `Iterator[Tuple[int,Dict]]`.
+
+#### `Index.clear_documents`
+
+> *Index.clear_documents()*
+
+Remove all documents from the index.
+
+Returns: Number of documents removed.
+
 #### `Index.delete_documents`
 
 > *Index.delete_documents(ids)*
 
-TODO.
+Removes documents from the index given their external ID.
+
+| Parameter | Required | Type | Description |
+|-----------|----------|------|-------------|
+| `ids` | Yes | [`List[str]`](https://docs.python.org/3/library/typing.html#typing.List) | List of strings, each corresponding to an external ID. |
+
+Returns: TODO.
 
 #### `Index.get_document`
 
