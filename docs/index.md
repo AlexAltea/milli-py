@@ -25,24 +25,34 @@ Example:
 
 #### `Index.add_documents`
 
-> *Index.add_documents(documents)*
+> *Index.add_documents(documents, update_method=IndexDocumentsMethod.ReplaceDocuments)*
 
 Adds documents to the index.
 
 | Parameter | Required | Type | Description |
 |-----------|----------|------|-------------|
-| `documents` | Yes | [`List[Dict[str,Any]]`](https://docs.python.org/3/library/typing.html#typing.List) | List of JSON-convertible dictionaries, i.e. dictionaries with string keys mapping to integers, floats, booleans, strings, arrays, and other dictionaries with string keys (potentially nested). |
+| `documents` | Yes | [`Iterable[Dict[str,Any]]`](https://docs.python.org/3/library/typing.html#typing.Iterable) | Any iterable of JSON-convertible dictionaries, e.g. `list`, `tuple`, `dict_values`, generators, etc. Each item must be a dictionary with string keys mapping to integers, floats, booleans, strings, arrays, and other dictionaries with string keys (potentially nested). |
+| `update_method` | No | `IndexDocumentsMethod` | Strategy used when a document with an existing external ID is provided. `ReplaceDocuments` (default) replaces the stored document entirely; `UpdateDocuments` merges the new fields on top of the stored document. |
 
-Returns: TODO.
+Returns: `DocumentAdditionResult`. An object with the following fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `indexed_documents` | [`int`](https://docs.python.org/3/library/functions.html#int) | Number of documents processed by this call. |
+| `number_of_documents` | [`int`](https://docs.python.org/3/library/functions.html#int) | Total number of documents in the index after this call. |
 
 Example:
 
 ```py
->>> index.add_documents([
+>>> result = index.add_documents([
     { 'id': 0, 'title': 'Hello earth', 'tags': ['greeting', 'planet'], 'orbit': 3 },
     { 'id': 1, 'title': 'Hello mars', 'tags': ['greeting', 'planet'], 'orbit': 4 },
     { 'id': 2, 'title': 'Hello sun', 'tags': ['greeting', 'star'] },
 ])
+>>> result.indexed_documents
+3
+>>> result.number_of_documents
+3
 ```
 
 #### `Index.all_documents`
@@ -59,19 +69,19 @@ Returns: `Iterator[Tuple[int,Dict]]`.
 
 Remove all documents from the index.
 
-Returns: Number of documents removed.
+Returns: [`int`](https://docs.python.org/3/library/functions.html#int). Number of documents removed.
 
 #### `Index.delete_documents`
 
 > *Index.delete_documents(ids)*
 
-Removes documents from the index given their external ID.
+Removes documents from the index given their external ID. Any IDs not present in the index are silently ignored.
 
 | Parameter | Required | Type | Description |
 |-----------|----------|------|-------------|
 | `ids` | Yes | [`List[str]`](https://docs.python.org/3/library/typing.html#typing.List) | List of strings, each corresponding to an external ID. |
 
-Returns: TODO.
+Returns: [`int`](https://docs.python.org/3/library/functions.html#int). Number of documents actually removed.
 
 #### `Index.get_document`
 
@@ -105,6 +115,7 @@ Obtain a list of document from the index given their internal IDs.
 Returns: [`List[Dict[str,Any]]`](https://docs.python.org/3/library/typing.html#typing.List). List of document contents.
 
 Example (formatted):
+
 ```py
 >>> index.get_documents([1,2])
 [
