@@ -59,9 +59,19 @@ Example:
 
 > *Index.all_documents()*
 
-Iterator of all documents in the index alongside their internal IDs.
+Returns an iterator over every document in the index paired with its internal ID.
 
-Returns: `Iterator[Tuple[int,Dict]]`.
+Returns: `Iterator[Tuple[int,Dict]]`. Each item is a `(internal_id, document)` tuple.
+
+Example:
+
+```py
+>>> for internal_id, document in index.all_documents():
+...     print(internal_id, document)
+0 { 'id': 0, 'title': 'Hello earth', 'tags': ['greeting', 'planet'], 'orbit': 3 }
+1 { 'id': 1, 'title': 'Hello mars', 'tags': ['greeting', 'planet'], 'orbit': 4 }
+2 { 'id': 2, 'title': 'Hello sun', 'tags': ['greeting', 'star'] }
+```
 
 #### `Index.clear_documents`
 

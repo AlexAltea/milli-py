@@ -85,8 +85,7 @@ impl PyIndex {
         for document in docs {
             let (docid, obkv) = document.unwrap();
             let doc = obkv_to_pydict!(self, py, rtxn, obkv);
-            let tuple = PyTuple::new(py, &[docid.into_py(py), doc.into()]);
-            list.append(tuple).unwrap();
+            list.append((docid, doc)).unwrap();
         }
         let iter = PyIterator::from_object(py, list).unwrap();
         Ok(iter.into())
