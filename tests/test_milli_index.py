@@ -98,3 +98,41 @@ def test_milli_index():
         result = index.clear_documents()
         assert(result == 3)
         del(index)
+    
+    # Document addition from iterable types
+    with tempfile.TemporaryDirectory() as tmp:
+        index = milli.Index(tmp)
+        # Test tuples
+        result = index.add_documents((
+            { "id": 0, "title": "Hello world" },
+            { "id": 1, "title": "Hello moon" },
+        ))
+        assert(result.indexed_documents == 2)
+        # Test dict_values
+        result = index.add_documents({
+            2: { "id": 2, "title": "Hello sun" },
+            3: { "id": 3, "title": "Hello mars" },
+        }.values())
+        assert(result.indexed_documents == 2)
+        # Test generators
+        result = index.add_documents(
+            { "id": i, "title": f"Test {i}" } for i in (4, 5)
+        )
+        assert(result.indexed_documents == 2)
+        # Test iterable type with non-dict items
+        try:
+            index.add_documents([42])
+        except TypeError:
+            pass
+        else:
+            assert False, "expected TypeError"
+        # Ensure correct items are placed in the index
+        assert(index.get_documents([0, 1, 2, 3, 4, 5]) == [
+            { "id": 0, "title": "Hello world" },
+            { "id": 1, "title": "Hello moon" },
+            { "id": 2, "title": "Hello sun" },
+            { "id": 3, "title": "Hello mars" },
+            { "id": 4, "title": "Test 4" },
+            { "id": 5, "title": "Test 5" },
+        ])
+        del(index)

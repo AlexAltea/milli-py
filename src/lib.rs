@@ -46,7 +46,7 @@ impl PyIndex {
         return PyIndex{ index };
     }
 
-    fn add_documents(&self, py: Python<'_>, list: &PyList, update_method: Option<PyIndexDocumentsMethod>) -> PyResult<PyDocumentAdditionResult> {
+    fn add_documents(&self, py: Python<'_>, documents: &PyAny, update_method: Option<PyIndexDocumentsMethod>) -> PyResult<PyDocumentAdditionResult> {
         let mut config = IndexDocumentsConfig::default();
         if update_method.is_some() {
             config.update_method = update_method.unwrap().into();
@@ -57,12 +57,14 @@ impl PyIndex {
         let builder = IndexDocuments::new(
             &mut wtxn, &self, &indexer_config, config.clone(), |_| (), || false).unwrap();
 
-        // Convert Python array into Vec<milli::Object>
-        let list = list.to_object(py);
-        let list = conv::to_json(py, &list)?;
+        // Convert Python iterable types into Vec<milli::Object>
         let mut docbuilder = DocumentsBatchBuilder::new(Vec::new());
-        for item in list.as_array().unwrap() {
-            let object = item.as_object().unwrap();
+        for item in documents.iter()? {
+            let item = item?.to_object(py);
+            let value = conv::to_json(py, &item)?;
+            let object = value.as_object().ok_or_else(|| {
+                pyo3::exceptions::PyTypeError::new_err("each document must be a dict")
+            })?;
             docbuilder.append_json_object(object).unwrap();
         }
         let vector = docbuilder.into_inner().unwrap();
