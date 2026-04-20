@@ -12,8 +12,6 @@ crate-type = ["cdylib"]
 
 [dependencies]
 milli = { path = "meilisearch/milli" }
-pyo3 = { version = "0.18.1", features = ["extension-module"] }
-serde_json = { version = "1.0.93" }
-serde = { version = "1.0.152" }
-heed = "0.20.3"
-obkv = "0.2.1"
+pyo3 = { version = "0.28.3", features = ["extension-module"] }
+serde_json = "1.0.149"
+serde = "1.0.228"

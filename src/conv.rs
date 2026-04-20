@@ -5,6 +5,7 @@ use std::marker::PhantomData;
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyFloat, PyList, PyTuple};
+use pyo3::IntoPyObjectExt;
 use serde::de::{DeserializeSeed, Deserializer, MapAccess, SeqAccess, Visitor};
 
 // From https://github.com/mozilla-services/python-canonicaljson-rs/blob/62599b246055a1c8a78e5777acdfe0fd594be3d8/src/lib.rs#L87-L167
@@ -13,7 +14,7 @@ pub enum PyCanonicalJSONError {
     InvalidConversion { error: String },
     PyErr { error: String },
     DictKeyNotSerializable { typename: String },
-    InvalidFloat { value: PyObject },
+    InvalidFloat { value: Py<PyAny> },
     InvalidCast { typename: String },
 }
 
@@ -51,10 +52,10 @@ impl From<PyCanonicalJSONError> for pyo3::PyErr {
 }
 
 
-pub fn to_json(py: Python, obj: &PyObject) -> Result<serde_json::Value, PyCanonicalJSONError> {
+pub fn to_json<'py>(py: Python<'py>, obj: &Bound<'py, PyAny>) -> Result<serde_json::Value, PyCanonicalJSONError> {
     macro_rules! return_cast {
         ($t:ty, $f:expr) => {
-            if let Ok(val) = obj.downcast::<$t>(py) {
+            if let Ok(val) = obj.downcast::<$t>() {
                 return $f(val);
             }
         };
@@ -62,7 +63,7 @@ pub fn to_json(py: Python, obj: &PyObject) -> Result<serde_json::Value, PyCanoni
 
     macro_rules! return_to_value {
         ($t:ty) => {
-            if let Ok(val) = obj.extract::<$t>(py) {
+            if let Ok(val) = obj.extract::<$t>() {
                 return serde_json::value::to_value(val).map_err(|error| {
                     PyCanonicalJSONError::InvalidConversion {
                         error: format!("{}", error),
@@ -72,7 +73,7 @@ pub fn to_json(py: Python, obj: &PyObject) -> Result<serde_json::Value, PyCanoni
         };
     }
 
-    if obj.as_ref(py).eq(&py.None())? {
+    if obj.is_none() {
         return Ok(serde_json::Value::Null);
     }
 
@@ -81,10 +82,10 @@ pub fn to_json(py: Python, obj: &PyObject) -> Result<serde_json::Value, PyCanoni
     return_to_value!(u64);
     return_to_value!(i64);
 
-    return_cast!(PyDict, |x: &PyDict| {
+    return_cast!(PyDict, |x: &Bound<'_, PyDict>| {
         let mut map = serde_json::Map::new();
         for (key_obj, value) in x.iter() {
-            let key = if key_obj.eq(py.None().as_ref(py))? {
+            let key = if key_obj.is_none() {
                 Ok("null".to_string())
             } else if let Ok(val) = key_obj.extract::<bool>() {
                 Ok(if val {
@@ -97,38 +98,36 @@ pub fn to_json(py: Python, obj: &PyObject) -> Result<serde_json::Value, PyCanoni
             } else {
                 Err(PyCanonicalJSONError::DictKeyNotSerializable {
                     typename: key_obj
-                        .to_object(py)
-                        .as_ref(py)
                         .get_type()
                         .name()?
                         .to_string(),
                 })
             };
-            map.insert(key?, to_json(py, &value.to_object(py))?);
+            map.insert(key?, to_json(py, &value)?);
         }
         Ok(serde_json::Value::Object(map))
     });
 
-    return_cast!(PyList, |x: &PyList| Ok(serde_json::Value::Array(
-        x.iter().map(|x| to_json(py, &x.to_object(py)).unwrap()).collect()
+    return_cast!(PyList, |x: &Bound<'_, PyList>| Ok(serde_json::Value::Array(
+        x.iter().map(|x| to_json(py, &x).unwrap()).collect()
     )));
 
-    return_cast!(PyTuple, |x: &PyTuple| Ok(serde_json::Value::Array(
-        x.iter().map(|x| to_json(py, &x.to_object(py)).unwrap()).collect()
+    return_cast!(PyTuple, |x: &Bound<'_, PyTuple>| Ok(serde_json::Value::Array(
+        x.iter().map(|x| to_json(py, &x).unwrap()).collect()
     )));
 
-    return_cast!(PyFloat, |x: &PyFloat| {
+    return_cast!(PyFloat, |x: &Bound<'_, PyFloat>| {
         match serde_json::Number::from_f64(x.value()) {
             Some(n) => Ok(serde_json::Value::Number(n)),
             None => Err(PyCanonicalJSONError::InvalidFloat {
-                value: x.to_object(py),
+                value: x.clone().into_any().unbind(),
             }),
         }
     });
 
     // At this point we can't cast it, set up the error object
     Err(PyCanonicalJSONError::InvalidCast {
-        typename: obj.as_ref(py).get_type().name()?.to_string(),
+        typename: obj.get_type().name()?.to_string(),
     })
 }
 
@@ -146,7 +145,7 @@ impl<'a> ObkvValue<'a> {
 }
 
 impl<'de, 'a> DeserializeSeed<'de> for ObkvValue<'a> {
-    type Value = PyObject;
+    type Value = Py<PyAny>;
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
@@ -157,7 +156,7 @@ impl<'de, 'a> DeserializeSeed<'de> for ObkvValue<'a> {
 }
 
 impl<'de, 'a> Visitor<'de> for ObkvValue<'a> {
-    type Value = PyObject;
+    type Value = Py<PyAny>;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         formatter.write_str("any valid JSON value")
@@ -165,27 +164,27 @@ impl<'de, 'a> Visitor<'de> for ObkvValue<'a> {
 
     fn visit_bool<E>(self, value: bool) -> Result<Self::Value, E>
     where E: serde::de::Error {
-        Ok(value.to_object(self.py))
+        Ok(value.into_py_any(self.py).unwrap())
     }
 
     fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
     where E: serde::de::Error {
-        Ok(value.to_object(self.py))
+        Ok(value.into_py_any(self.py).unwrap())
     }
 
     fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
     where E: serde::de::Error {
-        Ok(value.to_object(self.py))
+        Ok(value.into_py_any(self.py).unwrap())
     }
 
     fn visit_f64<E>(self, value: f64) -> Result<Self::Value, E>
     where E: serde::de::Error {
-        Ok(value.to_object(self.py))
+        Ok(value.into_py_any(self.py).unwrap())
     }
 
     fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
     where E: serde::de::Error {
-        Ok(value.to_object(self.py))
+        Ok(value.into_py_any(self.py).unwrap())
     }
 
     fn visit_unit<E>(self) -> Result<Self::Value, E> {
@@ -198,7 +197,7 @@ impl<'de, 'a> Visitor<'de> for ObkvValue<'a> {
         while let Some(elem) = seq.next_element_seed(self)? {
             elements.push(elem);
         }
-        Ok(elements.to_object(self.py))
+        Ok(elements.into_py_any(self.py).unwrap())
     }
 
     fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
@@ -207,6 +206,6 @@ impl<'de, 'a> Visitor<'de> for ObkvValue<'a> {
         while let Some((key, value)) = map.next_entry_seed(PhantomData::<String>, self)? {
             entries.insert(key, value);
         }
-        Ok(entries.to_object(self.py))
+        Ok(entries.into_py_any(self.py).unwrap())
     }
 }

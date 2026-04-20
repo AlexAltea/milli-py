@@ -37,6 +37,7 @@ struct PyIndex {
 #[pymethods]
 impl PyIndex {
     #[new]
+    #[pyo3(signature = (path, map_size=None))]
     fn new(path: String, map_size: Option<usize>) -> Self {
         let mut options = mi::heed::EnvOpenOptions::new();
         if map_size.is_some() {
@@ -46,7 +47,8 @@ impl PyIndex {
         return PyIndex{ index };
     }
 
-    fn add_documents(&self, py: Python<'_>, documents: &PyAny, update_method: Option<PyIndexDocumentsMethod>) -> PyResult<PyDocumentAdditionResult> {
+    #[pyo3(signature = (documents, update_method=None))]
+    fn add_documents(&self, py: Python<'_>, documents: &Bound<'_, PyAny>, update_method: Option<PyIndexDocumentsMethod>) -> PyResult<PyDocumentAdditionResult> {
         let mut config = IndexDocumentsConfig::default();
         if update_method.is_some() {
             config.update_method = update_method.unwrap().into();
@@ -59,8 +61,8 @@ impl PyIndex {
 
         // Convert Python iterable types into Vec<milli::Object>
         let mut docbuilder = DocumentsBatchBuilder::new(Vec::new());
-        for item in documents.iter()? {
-            let item = item?.to_object(py);
+        for item in documents.try_iter()? {
+            let item = item?;
             let value = conv::to_json(py, &item)?;
             let object = value.as_object().ok_or_else(|| {
                 pyo3::exceptions::PyTypeError::new_err("each document must be a dict")
@@ -87,7 +89,7 @@ impl PyIndex {
             let doc = obkv_to_pydict!(self, py, rtxn, obkv);
             list.append((docid, doc)).unwrap();
         }
-        let iter = PyIterator::from_object(py, list).unwrap();
+        let iter = PyIterator::from_object(&list).unwrap();
         Ok(iter.into())
     }
 
@@ -129,7 +131,7 @@ impl PyIndex {
         for (_docid, obkv) in docs {
             list.append(obkv_to_pydict!(self, py, rtxn, obkv)).unwrap();
         }
-        Ok(list.into())
+        Ok(list.unbind())
     }
 
     fn primary_key(&self) -> PyResult<Option<String>> {
@@ -193,7 +195,7 @@ impl From<DocumentAdditionResult> for PyDocumentAdditionResult {
 }
 
 #[pymodule]
-fn milli(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
+fn milli(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyIndex>()?;
     m.add_class::<PyIndexDocumentsMethod>()?;
     m.add_class::<PyDocumentAdditionResult>()?;
