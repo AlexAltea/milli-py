@@ -1,8 +1,9 @@
 [project]
 name = "milli"
 version = "1.11.1"
+description = "Python bindings for Milli, the embeddable Rust-based search engine powering Meilisearch"
 requires-python = ">=3.10"
-repository = "https://github.com/AlexAltea/milli-py"
+readme = "README.md"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
@@ -17,6 +18,11 @@ classifiers = [
     "Programming Language :: Rust",
     "Typing :: Typed",
 ]
+
+[project.urls]
+Documentation = "https://github.com/AlexAltea/milli-py/blob/master/docs/index.md"
+Repository = "https://github.com/AlexAltea/milli-py.git"
+Issues = "https://github.com/AlexAltea/milli-py/issues"
 
 [build-system]
 requires = ["maturin>=1.0,<2.0"]
