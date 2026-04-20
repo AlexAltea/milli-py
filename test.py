@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 
-from tests import *
-
-def test():
-    test_milli_index()
+import unittest
 
 if __name__ == '__main__':
-    test()
+    unittest.main(module='tests', verbosity=2)
