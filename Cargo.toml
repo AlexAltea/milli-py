@@ -1,3 +1,21 @@
+[package]
+name = "milli_py"
+version = "1.11.1"
+edition = "2021"
+authors = ["Alexandro Sanchez Bach <alexandro@phi.nz>"]
+
+[lib]
+name = "milli"
+
+# Needed to produce a shared library for Python.
+crate-type = ["cdylib"]
+
+[dependencies]
+milli = { path = "meilisearch/milli" }
+pyo3 = { version = "0.28.3", features = ["extension-module"] }
+serde_json = "1.0.149"
+serde = "1.0.228"
+
 [workspace]
 resolver = "2"
 members = [
@@ -19,21 +37,3 @@ homepage = "https://meilisearch.com"
 readme = "README.md"
 edition = "2021"
 license = "MIT"
-
-[package]
-name = "milli_py"
-version = "1.11.1"
-edition = "2021"
-authors = ["Alexandro Sanchez Bach <alexandro@phi.nz>"]
-
-[lib]
-name = "milli"
-
-# Needed to produce a shared library for Python.
-crate-type = ["cdylib"]
-
-[dependencies]
-milli = { path = "meilisearch/milli" }
-pyo3 = { version = "0.28.3", features = ["extension-module"] }
-serde_json = "1.0.149"
-serde = "1.0.228"
