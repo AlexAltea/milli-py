@@ -1,3 +1,25 @@
+[workspace]
+resolver = "2"
+members = [
+    ".",
+    "meilisearch/milli",
+    "meilisearch/filter-parser",
+    "meilisearch/flatten-serde-json",
+    "meilisearch/json-depth-checker",
+]
+
+[workspace.package]
+version = "1.11.1"
+authors = [
+    "Quentin de Quelen <quentin@dequelen.me>",
+    "Clément Renault <clement@meilisearch.com>",
+]
+description = "Meilisearch HTTP server"
+homepage = "https://meilisearch.com"
+readme = "README.md"
+edition = "2021"
+license = "MIT"
+
 [package]
 name = "milli_py"
 version = "1.11.1"
