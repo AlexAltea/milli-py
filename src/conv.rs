@@ -55,7 +55,7 @@ impl From<PyCanonicalJSONError> for pyo3::PyErr {
 pub fn to_json<'py>(py: Python<'py>, obj: &Bound<'py, PyAny>) -> Result<serde_json::Value, PyCanonicalJSONError> {
     macro_rules! return_cast {
         ($t:ty, $f:expr) => {
-            if let Ok(val) = obj.downcast::<$t>() {
+            if let Ok(val) = obj.cast::<$t>() {
                 return $f(val);
             }
         };

@@ -164,7 +164,7 @@ impl Drop for PyIndex {
 }
 
 #[derive(Clone)]
-#[pyclass(name="IndexDocumentsMethod")]
+#[pyclass(name="IndexDocumentsMethod", from_py_object)]
 enum PyIndexDocumentsMethod {
     ReplaceDocuments,
     UpdateDocuments,
