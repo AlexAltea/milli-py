@@ -2,7 +2,12 @@
 name = "milli_py"
 version = "1.11.1"
 edition = "2021"
+license = "MIT"
+license-file = "LICENSE"
+readme = "README.md"
 authors = ["Alexandro Sanchez Bach <alexandro@phi.nz>"]
+description = "Python bindings for Milli, the embeddable Rust-based search engine powering Meilisearch"
+repository = "https://github.com/AlexAltea/milli-py"
 
 [lib]
 name = "milli"
