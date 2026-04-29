@@ -29,5 +29,22 @@ members = [
     ".",
     "meilisearch/crates/milli",
     "meilisearch/crates/filter-parser",
+    "meilisearch/crates/flatten-serde-json",
     "meilisearch/crates/json-depth-checker",
+    "meilisearch/crates/http-client",
 ]
+
+[workspace.package]
+version = "1.41.0"
+authors = [
+    "Quentin de Quelen <quentin@dequelen.me>",
+    "Clément Renault <clement@meilisearch.com>",
+]
+description = "Meilisearch HTTP server"
+homepage = "https://meilisearch.com"
+readme = "README.md"
+edition = "2021"
+license = "MIT"
+
+[workspace.dependencies]
+mimalloc = { version = "0.1.48", default-features = false, features = ["v3", "override"] }
