@@ -133,3 +133,13 @@ class TestMilliIndex(unittest.TestCase):
                 { "id": 5, "title": "Test 5" },
             ])
             del(index)
+
+    def test_index_persistence(self):
+        doc = { "id": 123, "title": "Hello world" }
+        with tempfile.TemporaryDirectory() as tmp:
+            index = milli.Index(tmp)
+            index.add_documents([doc])
+            del(index)
+            index = milli.Index(tmp)
+            self.assertEqual(index.get_document(0), doc)
+            del(index)
