@@ -1,7 +1,6 @@
 [project]
 name = "milli"
-version = "1.11.1"
-description = "Python bindings for Milli, the embeddable Rust-based search engine powering Meilisearch"
+version = "1.41.0"
 requires-python = ">=3.10"
 readme = "README.md"
 classifiers = [

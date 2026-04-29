@@ -83,7 +83,8 @@ class TestMilliIndex(unittest.TestCase):
                 { "id": 1, "title": "Hello moon", "content": "This is another sample" },
                 { "id": 2, "title": "Hello sun", "content": "This is yet another sample" },
             ])
-            result = index.delete_documents(["2", "0", "7"])
+            # NOTE: Internal IDs of the documents above match their external IDs
+            result = index.delete_documents([2, 0, 7])
             self.assertEqual(result, 2)
             self.assertEqual(index.get_document(1)['id'], 1)
             del(index)

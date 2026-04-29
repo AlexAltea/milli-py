@@ -85,11 +85,11 @@ Returns: [`int`](https://docs.python.org/3/library/functions.html#int). Number o
 
 > *Index.delete_documents(ids)*
 
-Removes documents from the index given their external ID. Any IDs not present in the index are silently ignored.
+Removes documents from the index given their internal ID. Any IDs not present in the index are silently ignored.
 
 | Parameter | Required | Type | Description |
 |-----------|----------|------|-------------|
-| `ids` | Yes | [`List[str]`](https://docs.python.org/3/library/typing.html#typing.List) | List of strings, each corresponding to an external ID. |
+| `ids` | Yes | [`List[int]`](https://docs.python.org/3/library/typing.html#typing.List) | List of internal IDs. |
 
 Returns: [`int`](https://docs.python.org/3/library/functions.html#int). Number of documents actually removed.
 

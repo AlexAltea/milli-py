@@ -1,6 +1,6 @@
 [package]
 name = "milli_py"
-version = "1.11.1"
+version = "1.41.0"
 edition = "2021"
 license = "MIT"
 license-file = "LICENSE"
@@ -16,29 +16,9 @@ name = "milli"
 crate-type = ["cdylib"]
 
 [dependencies]
-milli = { path = "meilisearch/milli" }
+milli = { path = "meilisearch/crates/milli" }
+http-client = { path = "meilisearch/crates/http-client" }
 pyo3 = { version = "0.28.3", features = ["extension-module"] }
+bumpalo = "3.19.0"
 serde_json = "1.0.149"
 serde = "1.0.228"
-
-[workspace]
-resolver = "2"
-members = [
-    ".",
-    "meilisearch/milli",
-    "meilisearch/filter-parser",
-    "meilisearch/flatten-serde-json",
-    "meilisearch/json-depth-checker",
-]
-
-[workspace.package]
-version = "1.11.1"
-authors = [
-    "Quentin de Quelen <quentin@dequelen.me>",
-    "Clément Renault <clement@meilisearch.com>",
-]
-description = "Meilisearch HTTP server"
-homepage = "https://meilisearch.com"
-readme = "README.md"
-edition = "2021"
-license = "MIT"

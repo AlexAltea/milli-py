@@ -1,14 +1,22 @@
 extern crate milli as mi;
 
 use std::ops::Deref;
+use std::sync::Arc;
 
 use pyo3::prelude::*;
 use pyo3::types::*;
 
-use mi::{DocumentId, Index, Search};
-use mi::documents::{DocumentsBatchBuilder, DocumentsBatchReader};
+use mi::{CreateOrOpen, DocumentId, Index, Search};
+use mi::documents::{DocumentsBatchBuilder, DocumentsBatchReader, PrimaryKey};
+use mi::progress::{EmbedderStats, Progress};
 use mi::update::{ClearDocuments, DocumentAdditionResult,
     IndexerConfig, IndexDocumentsConfig, IndexDocumentsMethod, IndexDocuments};
+use mi::update::new::indexer;
+use mi::update::new::indexer::DocumentDeletion;
+use mi::ThreadPoolNoAbortBuilder;
+use mi::vector::RuntimeEmbedders;
+use http_client::policy::IpPolicy;
+use bumpalo::Bump;
 use serde::Deserializer;
 
 mod conv;
@@ -39,11 +47,11 @@ impl PyIndex {
     #[new]
     #[pyo3(signature = (path, map_size=None))]
     fn new(path: String, map_size: Option<usize>) -> Self {
-        let mut options = mi::heed::EnvOpenOptions::new();
+        let mut options = mi::heed::EnvOpenOptions::new().read_txn_without_tls();
         if map_size.is_some() {
             options.map_size(map_size.unwrap());
         }
-        let index = Index::new(options, &path).unwrap();
+        let index = Index::new(options, &path, CreateOrOpen::create_without_shards()).unwrap();
         return PyIndex{ index };
     }
 
@@ -56,8 +64,11 @@ impl PyIndex {
 
         let mut wtxn = self.write_txn().unwrap();
         let indexer_config = IndexerConfig::default();
+        let embedder_stats: Arc<EmbedderStats> = Default::default();
+        let ip_policy = IpPolicy::danger_always_allow();
         let builder = IndexDocuments::new(
-            &mut wtxn, &self, &indexer_config, config.clone(), |_| (), || false).unwrap();
+            &mut wtxn, &self, &indexer_config, config.clone(), |_| (), || false,
+            &embedder_stats, &ip_policy).unwrap();
 
         // Convert Python iterable types into Vec<milli::Object>
         let mut docbuilder = DocumentsBatchBuilder::new(Vec::new());
@@ -101,20 +112,48 @@ impl PyIndex {
         Ok(result.into())
     }
 
-    fn delete_documents(&self, ids: Vec<String>) -> PyResult<u64> {
-        let config = IndexDocumentsConfig::default();
+    fn delete_documents(&self, ids: Vec<DocumentId>) -> PyResult<u64> {
         let indexer_config = IndexerConfig::default();
-        let mut wtxn = self.write_txn().unwrap();
-        let builder = IndexDocuments::new(
-            &mut wtxn,
-            &self,
-            &indexer_config,
-            config.clone(), |_| (), || false).unwrap();
+        let pool = &indexer_config.thread_pool;
 
-        let (builder, removed) = builder.remove_documents(ids).unwrap();
-        let _result = builder.execute().unwrap();
+        let mut wtxn = self.write_txn().unwrap();
+        let rtxn = self.read_txn().unwrap();
+        let db_fields_ids_map = self.index.fields_ids_map(&rtxn).unwrap();
+        let new_fields_ids_map = db_fields_ids_map.clone();
+
+        // Keep only IDs that actually exist in the index
+        let existing = self.index.documents_ids(&rtxn).unwrap();
+        let to_delete: Vec<DocumentId> = ids.into_iter().filter(|id| existing.contains(*id)).collect();
+        let deleted = to_delete.len() as u64;
+
+        let mut deletion = DocumentDeletion::new();
+        deletion.delete_documents_by_docids(to_delete.into_iter().collect());
+
+        let indexer_alloc = Bump::new();
+        let pk_name = self.index.primary_key(&rtxn).unwrap().unwrap();
+        let primary_key = PrimaryKey::new(pk_name, &db_fields_ids_map).unwrap();
+        let document_changes = deletion.into_changes(&indexer_alloc, primary_key);
+
+        pool.install(|| {
+            indexer::index(
+                &mut wtxn,
+                &self.index,
+                &ThreadPoolNoAbortBuilder::new().build().unwrap(),
+                indexer_config.grenad_parameters(),
+                &db_fields_ids_map,
+                new_fields_ids_map,
+                None,
+                &document_changes,
+                RuntimeEmbedders::default(),
+                &|| false,
+                &Progress::default(),
+                &IpPolicy::danger_always_allow(),
+                &Default::default(),
+            )
+        }).unwrap().unwrap();
+
         wtxn.commit().unwrap();
-        Ok(removed.unwrap().into())
+        Ok(deleted)
     }
 
     fn get_document(&self, py: Python<'_>, id: DocumentId) -> PyResult<Py<PyDict>> {
@@ -143,7 +182,8 @@ impl PyIndex {
 
     fn search(&self, query: String) -> Vec<DocumentId> {
         let rtxn = self.read_txn().unwrap();
-        let mut search = Search::new(&rtxn, &self);
+        let progress = Progress::default();
+        let mut search = Search::new(&rtxn, &self, &progress);
         search.query(query);
         let results = search.execute().unwrap();
         return results.documents_ids;
