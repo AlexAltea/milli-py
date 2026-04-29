@@ -22,3 +22,12 @@ pyo3 = { version = "0.28.3", features = ["extension-module"] }
 bumpalo = "3.19.0"
 serde_json = "1.0.149"
 serde = "1.0.228"
+
+[workspace]
+resolver = "2"
+members = [
+    ".",
+    "meilisearch/crates/milli",
+    "meilisearch/crates/filter-parser",
+    "meilisearch/crates/json-depth-checker",
+]
